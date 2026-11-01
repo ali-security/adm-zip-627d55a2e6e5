@@ -123,10 +123,15 @@ module.exports = function (/** object */ options, /*Buffer*/ input) {
                     }
                     return data;
                 } else {
-                    inflater.inflateAsync(function (result) {
+                    inflater.inflateAsync(function (result, err) {
                         result.copy(result, 0);
                         if (callback) {
-                            if (!crc32OK(result)) {
+                            if (err) {
+                                // inflate failed (malformed stream or output exceeding the
+                                // declared uncompressed size) - report it instead of
+                                // validating the empty partial result
+                                callback(result, err);
+                            } else if (!crc32OK(result)) {
                                 callback(result, Utils.Errors.BAD_CRC()); //si added error
                             } else {
                                 callback(result);
